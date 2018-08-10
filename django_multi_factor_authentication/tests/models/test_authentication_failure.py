@@ -2,6 +2,7 @@ import datetime
 
 import pytz
 from django.test import TestCase, override_settings
+from django.utils import timezone
 from libfaketime import fake_time
 
 from django_multi_factor_authentication.models.authentication_failure import AuthenticationFailure
@@ -53,3 +54,87 @@ class TestAuthenticationFailure(TestCase):
         ret = AuthenticationFailure.limit_exceeded('1.2.3.4')
 
         self.assertFalse(ret)
+
+    @override_settings(DMFA_AUTHENTICATION_FAILURE_LIMIT=1)
+    def test_limit_exceeded_returns_false_if_amount_of_login_failures_for_ip_user_combination_less_than_x(self):
+        ret = AuthenticationFailure.limit_exceeded('1.2.3.4', username='one-two')
+
+        self.assertFalse(ret)
+
+    @override_settings(DMFA_AUTHENTICATION_FAILURE_LIMIT=1)
+    def test_limit_exceeded_returns_false_if_amount_of_login_failures_for_ip_less_than_x(self):
+        ret = AuthenticationFailure.limit_exceeded('1.2.3.4')
+
+        self.assertFalse(ret)
+
+    @fake_time("2018-08-20 12:00:00+00:00")
+    @override_settings(DMFA_AUTHENTICATION_FAILURE_LIMIT=0)
+    @override_settings(DMFA_AUTHENTICATION_FAILURE_RETENTION_TIME_SECONDS=2592000)
+    def test_removes_authentication_failures_exceeding_retention_limit_before_checking_limit_exceeded(self):
+        failure = AuthenticationFailure.objects.create(ip='1.2.3.4', username='handsome-bob')
+        failure.time_added = timezone.now() - datetime.timedelta(seconds=2592001)
+        failure.save()
+
+        ret = AuthenticationFailure.limit_exceeded('1.2.3.4')
+
+        self.assertFalse(ret)
+
+    @fake_time("2018-08-20 12:00:00+00:00")
+    @override_settings(DMFA_AUTHENTICATION_FAILURE_LIMIT=0)
+    @override_settings(DMFA_AUTHENTICATION_FAILURE_RETENTION_TIME_SECONDS=2592000)
+    def test_does_not_remove_authentication_failures_matching_retention_limit_before_checking_limit_exceeded(self):
+        failure = AuthenticationFailure.objects.create(ip='1.2.3.4', username='handsome-bob')
+        failure.time_added = timezone.now() - datetime.timedelta(seconds=2592000)
+        failure.save()
+
+        ret = AuthenticationFailure.limit_exceeded('1.2.3.4')
+
+        self.assertTrue(ret)
+
+    @fake_time("2018-08-20 12:00:00+00:00")
+    @override_settings(DMFA_AUTHENTICATION_FAILURE_LIMIT=0)
+    @override_settings(DMFA_AUTHENTICATION_FAILURE_RETENTION_TIME_SECONDS=2592000)
+    def test_does_not_remove_authentication_failures_not_exceeding_retention_limit_before_checking_limit_exceeded(self):
+        failure = AuthenticationFailure.objects.create(ip='1.2.3.4', username='handsome-bob')
+        failure.time_added = timezone.now() - datetime.timedelta(seconds=2591999)
+        failure.save()
+
+        ret = AuthenticationFailure.limit_exceeded('1.2.3.4')
+
+        self.assertTrue(ret)
+
+    @fake_time("2018-08-20 12:00:00+00:00")
+    @override_settings(DMFA_AUTHENTICATION_FAILURE_LIMIT=0)
+    @override_settings(DMFA_AUTHENTICATION_FAILURE_RETENTION_TIME_SECONDS=2592000)
+    def test_removes_user_failures_exceeding_retention_limit_before_checking_limit_exceeded(self):
+        failure = AuthenticationFailure.objects.create(ip='1.2.3.4', username='handsome-bob')
+        failure.time_added = timezone.now() - datetime.timedelta(seconds=2592001)
+        failure.save()
+
+        ret = AuthenticationFailure.limit_exceeded('1.2.3.4', username='handsome-bob')
+
+        self.assertFalse(ret)
+
+    @fake_time("2018-08-20 12:00:00+00:00")
+    @override_settings(DMFA_AUTHENTICATION_FAILURE_LIMIT=0)
+    @override_settings(DMFA_AUTHENTICATION_FAILURE_RETENTION_TIME_SECONDS=2592000)
+    def test_does_not_remove_user_failures_matching_retention_limit_before_checking_limit_exceeded(self):
+        failure = AuthenticationFailure.objects.create(ip='1.2.3.4', username='handsome-bob')
+        failure.time_added = timezone.now() - datetime.timedelta(seconds=2592000)
+        failure.save()
+
+        ret = AuthenticationFailure.limit_exceeded('1.2.3.4', username='handsome-bob')
+
+        self.assertTrue(ret)
+
+    @fake_time("2018-08-20 12:00:00+00:00")
+    @override_settings(DMFA_AUTHENTICATION_FAILURE_LIMIT=0)
+    @override_settings(DMFA_AUTHENTICATION_FAILURE_RETENTION_TIME_SECONDS=2592000)
+    def test_does_not_remove_user_failures_not_exceeding_retention_limit_before_checking_limit_exceeded(self):
+        failure = AuthenticationFailure.objects.create(ip='1.2.3.4', username='handsome-bob')
+        failure.time_added = timezone.now() - datetime.timedelta(seconds=2591999)
+        failure.save()
+
+        ret = AuthenticationFailure.limit_exceeded('1.2.3.4', username='handsome-bob')
+
+        self.assertTrue(ret)

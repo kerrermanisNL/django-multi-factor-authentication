@@ -19,4 +19,10 @@ to their computer while they are away.
 
 `DMFA_AUTHENTICATION_FAILURE_LIMIT`: Indicates how many authentication failures are allowed to happen before a user/ip
 is no longer allowed to authenticate. Depending on the chosen solution this can be remedied by using Google NoCaptcha
-for example. Default is 5.
+for example. Default is 5. Making this many mistakes in `DMFA_AUTHENTICATION_FAILURE_RETENTION_TIME_SECONDS` amount of
+time will make it so the user/ip is blocked from more authentication attempts.
+
+`DMFA_AUTHENTICATION_FAILURE_RETENTION_TIME_SECONDS`: Indicates how long authentication failures should be kept in
+seconds. Is used to determine when authentication failures should be cleaned up. Also determines how long the effect
+of failing an authentication is. If the user makes `DMFA_AUTHENTICATION_FAILURE_LIMIT` amount of mistakes within this
+time span, the user will not be allowed to log in.
