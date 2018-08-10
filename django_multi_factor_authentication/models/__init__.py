@@ -1,3 +1,4 @@
 from .multi_factor_authentication_user import MultiFactorAuthenticationUser
 from .multi_factor_token import MultiFactorToken
 from .multi_factor_authentication_token import MultiFactorAuthenticationToken
+from .authentication_failure import AuthenticationFailure

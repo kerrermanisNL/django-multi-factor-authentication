@@ -15,3 +15,8 @@ seconds. Default is 5 minutes (300 seconds). If a user has not authenticated wit
 within this time the user will be redirected back to wherever he came from to let them try again. Could prevent 
 situations in which a user walks away from their screen and a nefarious person gains access
 to their computer while they are away.
+
+
+`DMFA_AUTHENTICATION_FAILURE_LIMIT`: Indicates how many authentication failures are allowed to happen before a user/ip
+is no longer allowed to authenticate. Depending on the chosen solution this can be remedied by using Google NoCaptcha
+for example. Default is 5.
