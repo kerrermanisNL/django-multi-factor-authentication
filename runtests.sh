@@ -41,8 +41,11 @@ if [ -z "$VIRTUAL_ENV" ]; then
 	fi
 fi
 
+FAKETIME_ENV=$(python-libfaketime)
+
 cmd="
 set -e
+eval ${FAKETIME_ENV}
 python manage.py test $parallel --verbosity=$verbosity $*
 echo"
 
