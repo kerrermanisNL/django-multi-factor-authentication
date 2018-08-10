@@ -1,7 +1,8 @@
+import datetime
 from unittest.mock import patch
 from django.utils import timezone
 from django.db import IntegrityError
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from libfaketime import fake_time
 
 from django_multi_factor_authentication.factories.multi_factor_user_factory import MultiFactorUserFactory
@@ -41,3 +42,36 @@ class TestAuthenticationToken(TestCase):
         token = MultiFactorAuthenticationToken.objects.create(multi_factor_user=self.mf_user)
 
         self.assertEqual(token.time_added, timezone.now())
+
+    @fake_time("2018-08-20 12:00:00+00:00")
+    @override_settings(DMFA_AUTHENTICATION_TOKEN_VALIDITY_TIME_SECONDS=300)
+    def test_is_expired_returns_true_if_current_time_exceeds_token_time_plus_x(self):
+        token = MultiFactorAuthenticationToken.objects.create(multi_factor_user=self.mf_user)
+        token.time_added = timezone.now() - datetime.timedelta(seconds=301)
+        token.save()
+
+        ret = token.is_expired()
+
+        self.assertTrue(ret)
+
+    @fake_time("2018-08-20 12:00:00+00:00")
+    @override_settings(DMFA_AUTHENTICATION_TOKEN_VALIDITY_TIME_SECONDS=300)
+    def test_is_expired_returns_false_if_current_time_equals_token_time_plus_x(self):
+        token = MultiFactorAuthenticationToken.objects.create(multi_factor_user=self.mf_user)
+        token.time_added = timezone.now() - datetime.timedelta(seconds=300)
+        token.save()
+
+        ret = token.is_expired()
+
+        self.assertFalse(ret)
+
+    @fake_time("2018-08-20 12:00:00+00:00")
+    @override_settings(DMFA_AUTHENTICATION_TOKEN_VALIDITY_TIME_SECONDS=300)
+    def test_is_expired_returns_false_if_current_time_less_than_token_time_plus_x(self):
+        token = MultiFactorAuthenticationToken.objects.create(multi_factor_user=self.mf_user)
+        token.time_added = timezone.now() - datetime.timedelta(seconds=299)
+        token.save()
+
+        ret = token.is_expired()
+
+        self.assertFalse(ret)
